@@ -27,6 +27,9 @@
       const paddleWidth = 75
       const paddleSpeed = 4
       const ballAcceleration = 1.1
+      const initialX = canvas.width / 2
+      const initialY = canvas.height - paddleHeight - ballRadius
+      const initialPaddleX = canvas.width / 2
 
       const brickRowCount = 3
       const brickColummCount = 5
@@ -36,11 +39,11 @@
       const brickOffSetTop = 30
       const brickOffSetLeft = 30
 
-      let x = canvas.width / 2
-      let y = canvas.height - 30
+      let x = initialX
+      let y = initialY
       let dx = 2
       let dy = -2
-      let paddleX = canvas.width / 2
+      let paddleX = initialPaddleX
       let leftPressed = false
       let rightPressed = false
       let score = 0
@@ -51,6 +54,31 @@
         bricks[c] = []
         for (let r = 0; r < brickRowCount; r++) {
           bricks[c][r] = { x: 0, y: 0, status: 1 }
+        }
+      }
+
+      function loseLife() {
+        lives--
+
+        if (!lives) {
+          alert("GAME OVER")
+          document.location.reload()
+        } else {
+          x = initialX
+          y = initialY
+          paddleX = initialPaddleX
+
+          const savedDx = dx
+          const savedDy = dy
+          dx = 0
+          dy = 0
+
+          function resumeBallMove() {
+            dx = savedDx
+            dy = savedDy
+          }
+
+          setTimeout(resumeBallMove, 1000)
         }
       }
 
@@ -76,21 +104,15 @@
         }
         if (y + dy < ballRadius) {
           dy = -dy
-        } else if (y + dy > canvas.height - ballRadius) {
-          if (x > paddleX - paddleWidth / 2 && x < paddleX + paddleWidth / 2) {
-            dy = -dy * ballAcceleration
-            dx = dx * ballAcceleration
-          } else {
-            lives--
-            if (!lives) {
-              alert("GAME OVER")
-              document.location.reload()
-            } else {
-              x = canvas.width / 2
-              y = canvas.height - 30
-              paddleX = canvas.width / 2
-            }
-          }
+        } else if (
+          y > initialY &&
+          x > paddleX - paddleWidth / 2 &&
+          x < paddleX + paddleWidth / 2
+        ) {
+          dy = -dy * ballAcceleration
+          dx = dx * ballAcceleration
+        } else if (y > canvas.height - ballRadius) {
+          loseLife()
         }
 
         x += dx
@@ -115,10 +137,10 @@
             let b = bricks[c][r]
             if (b.status == 1) {
               if (
-                x > b.x &&
-                x < b.x + brickWidth &&
-                y > b.y &&
-                y < b.y + brickHeight
+                x > b.x - ballRadius &&
+                x < b.x + brickWidth + ballRadius &&
+                y > b.y - ballRadius &&
+                y < b.y + brickHeight + ballRadius
               ) {
                 dy = -dy
                 b.status = 0
