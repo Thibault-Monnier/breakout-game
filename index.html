@@ -48,6 +48,8 @@
       let rightPressed = false
       let score = 0
       let lives = 3
+      let gamePaused
+      let gameWon = false
 
       let bricks = []
       for (let c = 0; c < brickColummCount; c++) {
@@ -66,23 +68,29 @@
         } else {
           x = initialX
           y = initialY
+          dy = -dy
           paddleX = initialPaddleX
+          gamePaused = true
+          setTimeout(() => (gamePaused = false), 1000)
+        }
+      }
 
-          const savedDx = dx
-          const savedDy = dy
-          dx = 0
-          dy = 0
-
-          function resumeBallMove() {
-            dx = savedDx
-            dy = savedDy
-          }
-
-          setTimeout(resumeBallMove, 1000)
+      function increaseScore() {
+        score++
+        draw()
+        if (score == brickColummCount * brickRowCount) {
+          gamePaused = true
+          gameWon = true
+          setTimeout(() => {
+            alert("It's a win! Congratulations!")
+            document.location.reload()
+          }, 500)
         }
       }
 
       function mouseMoveHandler(event) {
+        if (gamePaused) return
+
         paddleX = event.clientX - canvas.offsetLeft
         paddleX = Math.max(paddleX, paddleWidth / 2)
         paddleX = Math.min(paddleX, canvas.width - paddleWidth / 2)
@@ -91,6 +99,27 @@
       function keyDownHandler(event) {
         if (event.code == "ArrowLeft") leftPressed = true
         if (event.code == "ArrowRight") rightPressed = true
+        if (event.code == "Space") gamePaused = !gamePaused
+        if (event.code == "NumpadAdd") {
+          dy *= 1.5
+          dx *= 1.5
+        }
+        if (event.code == "NumpadSubtract") {
+          dy /= 1.5
+          dx /= 1.5
+        }
+        if (event.code == "Enter") {
+          for (c = 0; c < brickColummCount; c++) {
+            for (r = 0; r < brickRowCount; r++) {
+              let b = bricks[c][r]
+              if (b.status == 1) {
+                b.status = 0
+                increaseScore()
+                return
+              }
+            }
+          }
+        }
       }
 
       function keyUpHandler(event) {
@@ -115,11 +144,15 @@
           loseLife()
         }
 
-        x += dx
-        y += dy
+        if (!gamePaused) {
+          x += dx
+          y += dy
+        }
       }
 
-      function movePaddle() {
+      function movePaddleWithKeyboard() {
+        if (gamePaused) return
+
         if (leftPressed) {
           paddleX = Math.max(paddleX - paddleSpeed, paddleWidth / 2)
         }
@@ -144,11 +177,7 @@
               ) {
                 dy = -dy
                 b.status = 0
-                score++
-                if (score == brickColummCount * brickRowCount) {
-                  alert("It's a win! Congratulations!")
-                  document.location.reload()
-                }
+                increaseScore()
               }
             }
           }
@@ -211,15 +240,19 @@
         drawScore()
         drawLives()
         drawBricks()
-        drawBall()
+        if (!gameWon) drawBall()
         drawPaddle()
-        moveBall()
-        collisionDetection()
         requestAnimationFrame(draw)
       }
 
+      function run() {
+        moveBall()
+        collisionDetection()
+      }
+
       draw()
-      setInterval(movePaddle, 10)
+      setInterval(run, 10)
+      setInterval(movePaddleWithKeyboard, 10)
 
       document.addEventListener("keydown", keyDownHandler, false)
       document.addEventListener("keyup", keyUpHandler, false)
